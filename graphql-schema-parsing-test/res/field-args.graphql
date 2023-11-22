@@ -1,0 +1,22 @@
+"""Interface with field arguments"""
+interface ISuperWithFa {
+  superName(superNumber: Int): String
+}
+
+interface IWithFa implements ISuperWithFa {
+
+}
+
+type TypeWithInheritedFa implements IWithFa {
+
+}
+
+type TypeWithFa {
+  name(number: Int): String
+}
+
+type Query {
+  withFaById(id: ID!): TypeWithFa
+  withInheritedFaByName(name: String!): TypeWithFa
+
+}

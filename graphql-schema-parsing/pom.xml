@@ -1,0 +1,62 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>hiconic.ext.graphql</groupId>
+		<artifactId>parent</artifactId>
+		<version>[3.0,3.1)</version>
+	</parent>
+	<artifactId>graphql-schema-parsing</artifactId>
+	<version>3.0.10-rc</version>
+	<properties/>
+	<dependencies>
+		<dependency>
+			<groupId>com.graphql-java</groupId>
+			<artifactId>graphql-java</artifactId>
+			<version>${V.com.graphql-java}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.braintribe.gm</groupId>
+			<artifactId>service-api</artifactId>
+			<version>${V.com.braintribe.gm}</version>
+		</dependency>
+		<dependency>
+			<groupId>hiconic.ext.graphql</groupId>
+			<artifactId>graphql-schema-api-model</artifactId>
+			<version>${V.hiconic.ext.graphql}</version>
+			<?tag asset?>
+		</dependency>
+		<dependency>
+			<groupId>com.braintribe.gm</groupId>
+			<artifactId>gm-session-api</artifactId>
+			<version>${V.com.braintribe.gm}</version>
+		</dependency>
+        <dependency>
+            <groupId>com.braintribe.common</groupId>
+            <artifactId>platform-api</artifactId>
+            <version>${V.com.braintribe.common}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>meta-model</artifactId>
+            <version>${V.com.braintribe.gm}</version>
+            <?tag asset ?>
+        </dependency>
+        <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>essential-meta-data-model</artifactId>
+            <version>${V.com.braintribe.gm}</version>
+            <?tag asset ?>
+        </dependency>
+        <dependency>
+            <groupId>hiconic.ext.graphql</groupId>
+            <artifactId>graphql-api-model</artifactId>
+            <version>${V.hiconic.ext.graphql}</version>
+            <?tag asset ?>
+        </dependency>
+		<dependency>
+			<groupId>tribefire.extension.artifact</groupId>
+			<artifactId>artifact-management-api-model</artifactId>
+			<version>${V.tribefire.extension.artifact}</version>
+		</dependency>
+	</dependencies>
+</project>

@@ -1,0 +1,21 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>hiconic.ext.graphql</groupId>
+	<artifactId>parent</artifactId>
+	<version>3.0.4-rc</version>
+	<packaging>pom</packaging>
+	<properties>
+		<java.version>17</java.version>
+		<V.hiconic.ext.graphql>[3.0,3.1)</V.hiconic.ext.graphql>
+
+		<V.com.braintribe.common>[2.0, 2.1)</V.com.braintribe.common>
+		<V.com.braintribe.gm>[2.0, 2.1)</V.com.braintribe.gm>
+		<V.tribefire.cortex>[3.0, 3.1)</V.tribefire.cortex>
+		<V.com.braintribe.testing>[2.0, 2.1)</V.com.braintribe.testing>
+		
+		<V.tribefire.extension.artifact>[2.0, 2.1)</V.tribefire.extension.artifact>
+		<V.tribefire.setup.classic.env>[3.0, 3.1)</V.tribefire.setup.classic.env>
+
+		<V.com.graphql-java>20.4</V.com.graphql-java>
+</properties>
+</project>

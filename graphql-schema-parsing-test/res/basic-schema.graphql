@@ -1,0 +1,105 @@
+"""
+ISO 4217 currency code
+
+Example: EUR or USD or GBP
+"""
+scalar Currency
+
+
+type JoatType {
+  """! means mandatory"""
+  int: Int!
+  float: Float!
+  string: String!
+  boolean: Boolean!
+  
+  intList: [Int]
+  dataEnum: DataEnum
+
+  self: JoatType
+
+  currency: Currency
+}
+
+type UnderscorePropsType {
+  id: ID!
+  globalId: String
+  partition: String
+
+  id_: Int
+  underscore_: Int
+}
+
+input UnderscorePropsInputType {
+  id: ID!
+  globalId: String
+  partition: String
+
+  id_: Int
+  underscore_: Int
+}
+
+type QueryResult {
+}
+
+"""This is the API, each 'method' should be turned into a service request"""
+type Query {
+  query: QueryResult!
+  queryById(id: ID!): QueryResult!
+  queryByIdWithDefaultParam(id: ID!, number: Int = 100): QueryResult!
+  queryByInput(in: InputType!): QueryResult!
+  queryByReservedWords(select: String, domainId: String): QueryResult!
+}
+
+type MutationResult {
+}
+
+type Mutation {
+  mutate: MutationResult
+}
+
+
+"""This enum isn't referenced by any object type => API"""
+enum ApiEnum {
+	read
+	write
+}
+
+"""This enum is referenced by an object => data """
+enum DataEnum {
+	red
+	green
+	blue
+}
+
+input InputType {
+  """Default value, meaning non-mandatory"""
+  inputName: String
+  
+  stringWithDefault: String = "Default Name"
+  booleanWithDefault: Boolean = true
+  intWithDefault: Int = 50
+  floatWithDefault: Float = 123.45
+  enumWithDefault: DataEnum = green
+}
+
+interface SuperIface {
+  superIfaceName: String
+}
+
+interface Iface implements SuperIface {
+  ifaceName: String
+
+}
+
+type IfaceType implements Iface {
+  ifaceTypeName: String
+}
+
+type TypeU1 {
+}
+
+type TypeU2 {
+}
+
+union UnionType = TypeU1 | TypeU2
