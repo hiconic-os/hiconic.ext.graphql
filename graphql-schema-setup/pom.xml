@@ -6,7 +6,7 @@
 		<version>[3.0,3.1)</version>
 	</parent>
 	<artifactId>graphql-schema-setup</artifactId>
-	<version>3.0.3-rc</version>
+	<version>3.0.3</version>
 	<properties>
 	</properties>
 	<dependencies>

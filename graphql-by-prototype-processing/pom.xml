@@ -6,7 +6,7 @@
 		<version>[3.0,3.1)</version>
 	</parent>
 	<artifactId>graphql-by-prototype-processing</artifactId>
-	<version>3.0.4-rc</version>
+	<version>3.0.4</version>
 	<properties>
 	</properties>
 	<dependencies>
