@@ -1,16 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>hiconic.ext.graphql</groupId>
-		<artifactId>parent</artifactId>
-		<version>[3.0,3.1)</version>
-	</parent>
-	<artifactId>graphql-schema-setup</artifactId>
-	<version>3.0.3-rc</version>
-	<properties>
-	</properties>
-	<dependencies>
-	 <dependency>
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>hiconic.ext.graphql</groupId>
+        <artifactId>parent</artifactId>
+        <version>[4.0,4.1)</version>
+    </parent>
+    <artifactId>graphql-schema-setup</artifactId>
+    <version>4.0.1</version>
+    <properties/>
+    <dependencies>
+        <dependency>
             <groupId>tribefire.setup.classic.env</groupId>
             <artifactId>env-aware-web-platform-setup</artifactId>
             <version>${V.tribefire.setup.classic.env}</version>
@@ -26,5 +26,5 @@
             <type>man</type>
             <?tag asset?>
         </dependency>
-	</dependencies>
+    </dependencies>
 </project>
