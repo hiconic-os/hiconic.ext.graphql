@@ -7,7 +7,7 @@
         <version>[4.0,4.1)</version>
     </parent>
     <artifactId>graphql-by-prototype-processing</artifactId>
-    <version>4.0.1</version>
+    <version>4.0.3</version>
     <properties/>
     <dependencies>
         <dependency>
@@ -31,16 +31,16 @@
             <artifactId>service-api</artifactId>
             <version>${V.com.braintribe.gm}</version>
         </dependency>
-		<dependency>
-			<groupId>hiconic.ext.graphql</groupId>
-			<artifactId>graphql-reason-model</artifactId>
-			<version>${V.hiconic.ext.graphql}</version>
+        <dependency>
+            <groupId>hiconic.ext.graphql</groupId>
+            <artifactId>graphql-reason-model</artifactId>
+            <version>${V.hiconic.ext.graphql}</version>
             <?tag asset ?>
-		</dependency>
-		<dependency>
-			<groupId>com.braintribe.gm</groupId>
-			<artifactId>json-marshaller</artifactId>
-			<version>${V.com.braintribe.gm}</version>
-		</dependency>
+        </dependency>
+        <dependency>
+            <groupId>com.braintribe.gm</groupId>
+            <artifactId>json-marshaller</artifactId>
+            <version>${V.com.braintribe.gm}</version>
+        </dependency>
     </dependencies>
 </project>
