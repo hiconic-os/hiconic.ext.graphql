@@ -5,3 +5,8 @@
 **/ehthumbs.db
 **/Thumbs.db
 **/class-gen
+**/.idea
+**/*iml
+**/target
+*.container.cfg.xml
+.gradle
