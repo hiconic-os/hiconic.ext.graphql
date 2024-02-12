@@ -4,11 +4,15 @@ import java.util.function.BiFunction;
 
 import com.braintribe.codec.marshaller.api.PropertyTypeInferenceOverride;
 import com.braintribe.gm.model.reason.Maybe;
+import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.model.generic.GMF;
 import com.braintribe.model.generic.GenericEntity;
+import com.braintribe.model.generic.pr.criteria.EntityCriterion;
 import com.braintribe.model.generic.reflection.EntityType;
+import com.braintribe.model.generic.reflection.EntityVisitor;
 import com.braintribe.model.generic.reflection.GenericModelType;
 import com.braintribe.model.generic.reflection.Property;
+import com.braintribe.model.generic.reflection.TraversingContext;
 import com.braintribe.model.processing.service.api.ProceedContext;
 import com.braintribe.model.processing.service.api.ReasonedServiceAroundProcessor;
 import com.braintribe.model.processing.service.api.ServiceRequestContext;
@@ -17,6 +21,7 @@ import hiconic.ext.graphql.api.model.GraphQlRequest;
 import hiconic.ext.graphql.api.model.result.GraphQlListValue;
 import hiconic.ext.graphql.api.model.result.GraphQlResult;
 import hiconic.ext.graphql.api.model.result.GraphQlSingleValue;
+import hiconic.ext.graphql.reason.model.GraphQlServerError;
 
 public class GraphQlAroundProcessor implements ReasonedServiceAroundProcessor<GraphQlRequest, Object> {
 
@@ -25,8 +30,7 @@ public class GraphQlAroundProcessor implements ReasonedServiceAroundProcessor<Gr
 	private static Property listResultProperty = GraphQlListValue.T.getProperty(GraphQlListValue.value);
 
 	@Override
-	public Maybe<? extends Object> processReasoned(ServiceRequestContext context, GraphQlRequest request,
-			ProceedContext proceedContext) {
+	public Maybe<? extends Object> processReasoned(ServiceRequestContext context, GraphQlRequest request, ProceedContext proceedContext) {
 
 		Property selectProperty = request.entityType().findProperty("select");
 		// handle error
@@ -50,15 +54,43 @@ public class GraphQlAroundProcessor implements ReasonedServiceAroundProcessor<Gr
 				// todo: add id-translation. PropertyDeserializationTranslation
 				.build();
 
-		GraphQlResult result = proceedContext.proceed(enrichedContext, request);
+		GraphQlResult graphQlResult = proceedContext.proceed(enrichedContext, request);
 
-		if (single) {
-			GraphQlSingleValue singularResult = (GraphQlSingleValue) result.getData();
-			return Maybe.complete(singularResult.getValue());
-		} else {
-			GraphQlListValue listResult = (GraphQlListValue) result.getData();
-			return Maybe.complete(listResult.getValue());
+		if (!graphQlResult.getErrors().isEmpty()) {
+			return Reasons.build(GraphQlServerError.T).enrich(r -> r.setErrors(graphQlResult.getErrors())).toMaybe();
 		}
+		Object data = graphQlResult.getData();
+
+		final Object resultObject;
+		if (single) {
+			GraphQlSingleValue singularResult = (GraphQlSingleValue) data;
+			resultObject = singularResult.getValue();
+		} else {
+			GraphQlListValue listResult = (GraphQlListValue) data;
+			resultObject = listResult.getValue();
+		}
+
+		if (resultObject instanceof GenericEntity ge) { // TODO: does this work for collections ?
+
+			// special properties handling
+			ge.type().traverse(ge, null, new EntityVisitor() {
+				@Override
+				protected void visitEntity(GenericEntity entity, EntityCriterion criterion, TraversingContext traversingContext) {
+					EntityType<GenericEntity> type = entity.entityType();
+					Property idProperty = type.findProperty("id");
+					Property idUnderscoreProperty = type.findProperty("id_");
+					if (idProperty != null && idUnderscoreProperty != null) {
+						Object idValue = idProperty.get(entity);
+						if (idValue != null) {
+							idUnderscoreProperty.set(entity, idValue);
+							idProperty.set(entity, null);
+						}
+					}
+				}
+			});
+		}
+
+		return Maybe.complete(resultObject);
 	}
 
 	private GenericModelType singleInference(Property p, EntityType<?> type) {
