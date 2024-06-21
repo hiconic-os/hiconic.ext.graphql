@@ -15,9 +15,11 @@ import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.reflection.Property;
 import com.braintribe.model.generic.value.EnumReference;
 import com.braintribe.model.meta.GmEntityType;
+import com.braintribe.model.meta.GmLinearCollectionType;
 import com.braintribe.model.meta.GmListType;
 import com.braintribe.model.meta.GmMetaModel;
 import com.braintribe.model.meta.GmType;
+import com.braintribe.model.meta.GmTypeKind;
 import com.braintribe.utils.StringTools;
 
 import graphql.language.BooleanValue;
@@ -49,7 +51,6 @@ import hiconic.ext.graphql.api.model.GraphQlMutationRequest;
 import hiconic.ext.graphql.api.model.GraphQlQueryRequest;
 import hiconic.ext.graphql.api.model.GraphQlRequest;
 import hiconic.ext.graphql.api.model.HasGraphQlFieldArguments;
-import hiconic.ext.graphql.api.model.result.GraphQlResult;
 import hiconic.gm.model.builder.GmCustomTypeBuilder;
 import hiconic.gm.model.builder.GmEntityTypeBuilder;
 import hiconic.gm.model.builder.GmEnumTypeBuilder;
@@ -243,7 +244,7 @@ public class GraphQlSchemaToGmModel {
 	private void collectDataFieldTypes() {
 		collectDataTypes(interfaceTypeDefinitions);
 		collectDataTypes(dataTypeDefinitions);
-		collectDataTypesFromInputs(inputObjectTypeDefinitions);
+		// collectDataTypesFromInputs(inputObjectTypeDefinitions);
 	}
 
 	private void collectDataTypes(List<? extends ImplementingTypeDefinition<?>> typeDefs) {
@@ -252,11 +253,14 @@ public class GraphQlSchemaToGmModel {
 				noticeDataType(fd.getType());
 	}
 
-	private void collectDataTypesFromInputs(List<InputObjectTypeDefinition> typeDefs) {
-		for (InputObjectTypeDefinition typeDef : typeDefs)
-			for (InputValueDefinition ivd : typeDef.getInputValueDefinitions())
-				noticeDataType(ivd.getType());
-	}
+	// probably wrong - data types are only used to tell if where enums belong.
+	// I don't think enums on input data types belong in data model
+	//
+	// private void collectDataTypesFromInputs(List<InputObjectTypeDefinition> typeDefs) {
+	// for (InputObjectTypeDefinition typeDef : typeDefs)
+	// for (InputValueDefinition ivd : typeDef.getInputValueDefinitions())
+	// noticeDataType(ivd.getType());
+	// }
 
 	private void noticeDataType(Type<?> type) {
 		if (type instanceof ListType lt)
@@ -297,7 +301,7 @@ public class GraphQlSchemaToGmModel {
 	}
 
 	private void createRequests() {
-		RESERVED_PROPERTY_NAMES.addAll(Arrays.asList("select", "domainId"));
+		RESERVED_PROPERTY_NAMES.addAll(Arrays.asList("select", "domainId", "sessionId"));
 
 		// Request Base
 		GmEntityTypeBuilder requestBaseBuilder = createBaseRequestTypeStub(requestBaseTypeSimpleName);
@@ -312,6 +316,7 @@ public class GraphQlSchemaToGmModel {
 		queryRequestBaseGmType.getSuperTypes().add(requestBaseGmType);
 		queryRequestBaseGmType.getSuperTypes().add(apiBuilder.getType(GraphQlQueryRequest.T));
 
+		// Create Query Requests
 		createRequests(queryRequestBaseGmType, ReqType.query, queryTypeDefinition);
 
 		if (mutationTypeDefinition != null) {
@@ -335,10 +340,13 @@ public class GraphQlSchemaToGmModel {
 		for (FieldDefinition fd : td.getFieldDefinitions()) {
 			GmEntityTypeBuilder builder = createRequest(requestBaseGmType, reqType, fd);
 
-			builder.it.setEvaluatesTo(apiBuilder.getType(GraphQlResult.T));
-
+			// subscription is currently not supported anyway
 			if (reqType != ReqType.subscription) {
-				GmType selectType = resolveGmType(fd.getType());
+				GmType evalType = resolveGmType(fd.getType());
+				builder.it.setEvaluatesTo(evalType);
+
+				// When a query returns a list, we still only want to pass a single instance to the "select" property.
+				GmType selectType = evalType.typeKind() == GmTypeKind.LIST ? ((GmLinearCollectionType) evalType).getElementType() : evalType;
 				builder.createProperty("select", selectType).markMandatory();
 			}
 		}

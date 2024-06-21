@@ -1,5 +1,7 @@
 package hiconic.ext.graphql;
 
+import static hiconic.ext.graphql.api.model.GraphQlQueryRequest.SELECTION_PROPERTY_NAME;
+
 import java.util.function.BiFunction;
 
 import com.braintribe.codec.marshaller.api.PropertyTypeInferenceOverride;
@@ -33,7 +35,7 @@ public class GraphQlAroundProcessor implements ReasonedServiceAroundProcessor<Gr
 	@Override
 	public Maybe<? extends Object> processReasoned(ServiceRequestContext context, GraphQlRequest request, ProceedContext proceedContext) {
 
-		Property selectProperty = request.entityType().findProperty("select");
+		Property selectProperty = request.entityType().findProperty(SELECTION_PROPERTY_NAME);
 		// handle error
 
 		GenericEntity select = selectProperty.get(request); // error handling, type checking

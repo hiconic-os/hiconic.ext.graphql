@@ -1,7 +1,6 @@
 package hiconic.ext.graphql;
 
 import com.braintribe.gm.model.reason.Maybe;
-import com.braintribe.model.generic.eval.EvalContext;
 import com.braintribe.model.generic.eval.Evaluator;
 import com.braintribe.model.processing.service.api.ReasonedServiceProcessor;
 import com.braintribe.model.processing.service.api.ServiceRequestContext;
@@ -16,8 +15,7 @@ import tribefire.extension.artifact.management.api.model.request.UploadArtifacts
 public class GraphQlSchemaToArtifact implements ReasonedServiceProcessor<ConvertGraphQlSchemaToArtifact, Neutral> {
 
 	@Override
-	public Maybe<? extends Neutral> processReasoned(ServiceRequestContext context,
-			ConvertGraphQlSchemaToArtifact request) {
+	public Maybe<? extends Neutral> processReasoned(ServiceRequestContext context, ConvertGraphQlSchemaToArtifact request) {
 
 		Resource schema = request.getSchema();
 		String path = request.getArtifactName();
@@ -25,11 +23,13 @@ public class GraphQlSchemaToArtifact implements ReasonedServiceProcessor<Convert
 		ConvertGraphQlSchemaToGm convertToGm = ConvertGraphQlSchemaToGm.T.create();
 		convertToGm.setSchema(schema);
 		Evaluator<ServiceRequest> evaluator = null;
+		@SuppressWarnings("unused")
 		Maybe<?> models = convertToGm.eval(evaluator).getReasoned();
 
 		UploadArtifacts uploadArtifact = UploadArtifacts.T.create();
 		uploadArtifact.setPath(path);
 		// ...
+		@SuppressWarnings("unused")
 		Maybe<Neutral> upload = uploadArtifact.eval(evaluator).getReasoned();
 
 		return null;

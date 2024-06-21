@@ -1,4 +1,4 @@
-package hiconic.ext.graphql.test.model.gm.countries.queries.types;
+package hiconic.ext.graphql.test.model.gm.countries.data;
 
 import java.util.Date;
 

@@ -63,6 +63,7 @@ public class GraphQlSchemaToGm implements ReasonedServiceProcessor<ConvertGraphQ
 
 		Resource schema = request.getSchema();
 
+		@SuppressWarnings("unused")
 		Maybe<TypeDefinitionRegistry> openResource = openResource(schema);
 		
 

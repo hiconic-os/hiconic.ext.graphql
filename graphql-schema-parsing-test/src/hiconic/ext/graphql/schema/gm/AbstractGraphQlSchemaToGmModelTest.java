@@ -161,16 +161,20 @@ public abstract class AbstractGraphQlSchemaToGmModelTest {
 				.isPresent();
 	}
 
-	protected void assertSelect(String expectedSig) {
-		assertEvalsToGqlResult();
+	protected void assertEvalsToAndSelect(String expectedSig) {
+		assertEvalsTo(expectedSig);
 		assertProperty("select", expectedSig, true);
 	}
 
-	protected void assertEvalsToGqlResult() {
+	protected void assertSelect(String expectedSig) {
+		assertProperty("select", expectedSig, true);
+	}
+
+	protected void assertEvalsTo(String expectedSig) {
 		GmType evaluatesTo = entityType.getEvaluatesTo();
 		assertThat(evaluatesTo).isNotNull();
 
-		assertThat(evaluatesTo.getTypeSignature()).as("Wrong evaluatesTo for: " + entityType.getTypeSignature()).isEqualTo(GraphQlResultSIG);
+		assertThat(evaluatesTo.getTypeSignature()).as("Wrong evaluatesTo for: " + entityType.getTypeSignature()).isEqualTo(expectedSig);
 	}
 
 	protected <T extends GmType> T loadType(String typeSignature, EntityType<T> typeType) {
@@ -267,5 +271,5 @@ public abstract class AbstractGraphQlSchemaToGmModelTest {
 	protected static String fieldArgsSig(String simpleName) {
 		return FIELD_ARGS_PACKAGE_BASE + simpleName;
 	}
-	
+
 }

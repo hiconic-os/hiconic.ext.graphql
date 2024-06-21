@@ -27,6 +27,7 @@ public class GraphQlToGmModel_BasicTest extends AbstractGraphQlSchemaToGmModelTe
 	private static final String UnionTypeSIG = dataSig("UnionType");
 
 	private static final String QueryResultTypeSIG = dataSig("QueryResult");
+	private static final String List_Of_QueryResultTypeSIG = "list<" + dataSig("QueryResult") + ">";
 	private static final String MutationResultTypeSIG = dataSig("MutationResult");
 	private static final String JoatTypeSIG = dataSig("JoatType");
 	private static final String UnderscorePropsTypeSIG = dataSig("UnderscorePropsType");
@@ -44,6 +45,7 @@ public class GraphQlToGmModel_BasicTest extends AbstractGraphQlSchemaToGmModelTe
 	private static final String QueryByIdWithDefaultParamRequestSIG = queryReqSig("QueryByIdWithDefaultParamRequest");
 	private static final String QueryByInputRequestSIG = queryReqSig("QueryByInputRequest");
 	private static final String QueryByReservedWordsSIG = queryReqSig("QueryByReservedWordsRequest");
+	private static final String QueryThatReturnsListSIG = queryReqSig("QueryThatReturnsListRequest");
 
 	private static final String MutateRequestSIG = mutationReqSig("MutateRequest");
 
@@ -118,30 +120,32 @@ public class GraphQlToGmModel_BasicTest extends AbstractGraphQlSchemaToGmModelTe
 		loadEntityType(BaseMutationRequestSIG, true, BaseRequestSIG, GraphQlMutationRequestSIG);
 
 		loadEntityType(QueryRequestSIG, false, BaseQueryRequestSIG);
-		assertSelect(QueryResultTypeSIG);
+		assertEvalsToAndSelect(QueryResultTypeSIG);
 
 		loadEntityType(QueryByIdRequestSIG, false, BaseQueryRequestSIG);
 		assertProperty("id_", TYPE_STRING, true);
-		assertSelect(QueryResultTypeSIG);
+		assertEvalsToAndSelect(QueryResultTypeSIG);
 
 		loadEntityType(QueryByInputRequestSIG, false, BaseQueryRequestSIG);
 		assertProperty("in", InputTypeSIG, true);
-		assertSelect(QueryResultTypeSIG);
+		assertEvalsToAndSelect(QueryResultTypeSIG);
 
 		loadEntityType(QueryByIdWithDefaultParamRequestSIG, false, BaseQueryRequestSIG);
 		assertProperty("id_", TYPE_STRING, true);
 		assertInitProperty("number", TYPE_INTEGER, 100);
-		assertSelect(QueryResultTypeSIG);
+		assertEvalsToAndSelect(QueryResultTypeSIG);
 
 		loadEntityType(QueryByReservedWordsSIG, false, BaseQueryRequestSIG);
 		assertProperty("select_", TYPE_STRING, false);
 		assertProperty("domainId_", TYPE_STRING, false);
+		assertEvalsToAndSelect(QueryResultTypeSIG);
+
+		loadEntityType(QueryThatReturnsListSIG, false, BaseQueryRequestSIG);
 		assertSelect(QueryResultTypeSIG);
+		assertEvalsTo(List_Of_QueryResultTypeSIG);
 
 		loadEntityType(MutateRequestSIG, false, BaseMutationRequestSIG);
-		assertSelect(MutationResultTypeSIG);
-		assertEvalsToGqlResult();
-
+		assertEvalsToAndSelect(MutationResultTypeSIG);
 	}
 
 }

@@ -12,7 +12,7 @@ type TypeWithInheritedFa implements IWithFa {
 }
 
 type TypeWithFa {
-  name(number: Int): String
+  name(globalId: String, number: Int, number_: Float): String
 }
 
 type Query {

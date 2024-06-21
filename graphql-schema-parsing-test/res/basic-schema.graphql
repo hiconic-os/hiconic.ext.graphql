@@ -49,6 +49,7 @@ type Query {
   queryByIdWithDefaultParam(id: ID!, number: Int = 100): QueryResult!
   queryByInput(in: InputType!): QueryResult!
   queryByReservedWords(select: String, domainId: String): QueryResult!
+  queryThatReturnsList: [QueryResult]
 }
 
 type MutationResult {

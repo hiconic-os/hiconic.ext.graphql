@@ -9,4 +9,6 @@ public interface GraphQlQueryRequest extends GraphQlRequest {
 
 	EntityType<GraphQlQueryRequest> T = EntityTypes.T(GraphQlQueryRequest.class);
 
+	String SELECTION_PROPERTY_NAME = "select";
+
 }

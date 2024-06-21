@@ -1,12 +1,11 @@
-package hiconic.ext.graphql.test.model.gm.countries.queries;
+package hiconic.ext.graphql.test.model.gm.countries.api.query;
 
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 
-import hiconic.ext.graphql.api.model.GraphQlQueryRequest;
-import hiconic.ext.graphql.test.model.gm.countries.queries.types.Language;
+import hiconic.ext.graphql.test.model.gm.countries.data.Language;
 
-public interface LanguageRequest extends GraphQlQueryRequest {
+public interface LanguageRequest extends GraphQlTestQueryRequest {
 
 	EntityType<LanguageRequest> T = EntityTypes.T(LanguageRequest.class);
 

@@ -1,5 +1,6 @@
 package hiconic.ext.graphql.schema.gm;
 
+import static com.braintribe.model.generic.reflection.SimpleTypes.TYPE_DOUBLE;
 import static com.braintribe.model.generic.reflection.SimpleTypes.TYPE_INTEGER;
 import static com.braintribe.model.generic.reflection.SimpleTypes.TYPE_STRING;
 
@@ -44,11 +45,11 @@ public class GraphQlToGmModel_FieldArgsTest extends AbstractGraphQlSchemaToGmMod
 
 		assertWithFaByIdRequest();
 		assertWithInheritedFaByNameRequest();
-
 	}
 
 	private void assertWithFaByIdRequest() {
 		loadEntityType(WithFaByIdRequestSIG, false, BaseQueryRequestSIG);
+		assertEvalsToAndSelect(TypeWithFaSIG);
 
 		loadEntityType(TypeWithFaSIG, false);
 		assertProperty("name", TYPE_STRING, false);
@@ -57,12 +58,14 @@ public class GraphQlToGmModel_FieldArgsTest extends AbstractGraphQlSchemaToGmMod
 		assertProperty("name_args_", TypeWithFa_name_argsSIG, false);
 
 		loadEntityType(TypeWithFa_name_argsSIG, false, GraphQlFieldArgumentsSIG);
+		assertProperty("globalId_", TYPE_STRING, false);
 		assertProperty("number", TYPE_INTEGER, false);
+		assertProperty("number__", TYPE_DOUBLE, false);
 	}
 
 	private void assertWithInheritedFaByNameRequest() {
 		loadEntityType(WithInheritedFaByNameRequestSIG, false, BaseQueryRequestSIG);
-		assertEvalsToGqlResult();
+		assertEvalsToAndSelect(TypeWithFaSIG);
 
 		loadEntityType(ISuperWithFaSIG, true);
 		assertProperty("superName", TYPE_STRING, false);

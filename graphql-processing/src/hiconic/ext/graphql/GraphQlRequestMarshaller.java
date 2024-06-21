@@ -1,17 +1,23 @@
 package hiconic.ext.graphql;
 
-import java.io.IOException;
+import static com.braintribe.utils.lcd.CollectionTools2.first;
+import static com.braintribe.utils.lcd.CollectionTools2.newList;
+import static com.braintribe.utils.lcd.CollectionTools2.newMap;
+import static com.braintribe.utils.lcd.StringTools.removeSuffixIfEligible;
+import static com.braintribe.utils.lcd.StringTools.uncapitalize;
+import static hiconic.ext.graphql.api.model.GraphQlQueryRequest.SELECTION_PROPERTY_NAME;
+import static java.util.stream.Collectors.joining;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
 import com.braintribe.codec.marshaller.api.GmDeserializationOptions;
@@ -21,10 +27,12 @@ import com.braintribe.codec.marshaller.api.Marshaller;
 import com.braintribe.codec.marshaller.api.OutputPrettiness;
 import com.braintribe.codec.marshaller.json.JsonStreamMarshaller;
 import com.braintribe.model.generic.GenericEntity;
+import com.braintribe.model.generic.reflection.BaseType;
+import com.braintribe.model.generic.reflection.CollectionType;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.GenericModelType;
 import com.braintribe.model.generic.reflection.Property;
-import com.braintribe.utils.StringTools;
+import com.braintribe.model.generic.reflection.TypeCode;
 
 import hiconic.ext.graphql.api.model.GraphQlFieldArguments;
 import hiconic.ext.graphql.api.model.GraphQlMutationRequest;
@@ -33,130 +41,97 @@ import hiconic.ext.graphql.api.model.GraphQlQueryRequest;
 import hiconic.ext.graphql.api.model.GraphQlRequest;
 import hiconic.ext.graphql.api.model.HasGraphQlFieldArguments;
 
-/**
- * @author Ralf Ulrich
- *
- */
-
 public class GraphQlRequestMarshaller implements Marshaller {
 
-	final String responseAlias = "value"; // alias to be used for all GraphQl responses
+	final String RESPONSE_ALIAS = "value"; // alias to be used for all GraphQl responses
 
-	private JsonStreamMarshaller jsonMarshaller = new JsonStreamMarshaller(); // TODO: is this the right place for this?
+	private final JsonStreamMarshaller jsonMarshaller = new JsonStreamMarshaller(); // TODO: is this the right place for this?
+
+	@Override
+	public Object unmarshall(InputStream in, GmDeserializationOptions options) throws MarshallException {
+		throw new UnsupportedOperationException();
+	}
 
 	@Override
 	public void marshall(OutputStream out, Object value, GmSerializationOptions options) throws MarshallException {
+		String queryString = encodeRequestToQueryString(value);
 
-		GraphQlRequest query = (GraphQlRequest) value;
-		EntityType<GenericEntity> queryType = query.entityType();
-		StringWriter writer = new StringWriter();
-
-		String indent = " "; // output formatting
-
-		String requestName = queryType.getShortName();
-
-		// remove trailing Request - naming convention
-		int index = requestName.lastIndexOf("Request");
-		if (index > 0) {
-			requestName = StringTools.uncapitalize(requestName.substring(0, index));
-		}
-
-		try {
-			generateRequest(query, queryType, writer, indent, requestName);
-			writer.close();
-		} catch (IOException ioe) {
-			String error = "During generation of GraphQl query for GraphQlRequest \"" + requestName + "\" an IO exception occured \"" + ioe.toString()
-					+ "\"";
-			throw new MarshallException(error);
-		}
-
-		String graphQlQueryContent = writer.toString();
-
-		// wrap query string into json and return, TODO is this the right place to do
-		// this?
-
-		GraphQlQuery gqlQuery = GraphQlQuery.T.create();
-		gqlQuery.setQuery(graphQlQueryContent);
-
-		StringWriter jsonContentWriter = new StringWriter();
-		jsonMarshaller.marshall(jsonContentWriter, gqlQuery, GmSerializationOptions.deriveDefaults().outputPrettiness(OutputPrettiness.none).build());
-		String jsonContent = jsonContentWriter.toString();
-		jsonContent = jsonContent.replace("\"_type\": \"hiconic.ext.graphql.api.model.GraphQlQuery\", \"_id\": \"0\",", "");
+		String jsonContent = wrapToJson(options, queryString);
 
 		PrintWriter outWriter = new PrintWriter(out);
 		outWriter.print(jsonContent);
 		outWriter.flush();
 	}
 
-	private void generateRequest(GraphQlRequest request, EntityType<GenericEntity> queryType, Appendable writer, String indent, String requestName)
-			throws IOException {
+	private String wrapToJson(GmSerializationOptions options, String queryString) {
+		options = GmSerializationOptions.deriveDefaults().outputPrettiness(OutputPrettiness.none).build();
+
+		GraphQlQuery queryEntity = GraphQlQuery.T.create();
+		queryEntity.setQuery(queryString);
+
+		StringWriter sw = new StringWriter();
+		jsonMarshaller.marshall(sw, queryEntity, options);
+		String jsonContent = sw.toString();
+		return jsonContent.replace("\"_type\": \"hiconic.ext.graphql.api.model.GraphQlQuery\", \"_id\": \"0\",", "");
+	}
+
+	private String encodeRequestToQueryString(Object value) {
+		if (value == null)
+			throw new IllegalArgumentException("Cannot encode null as a GraphQL query string.");
+
+		if (!(value instanceof GraphQlRequest))
+			throw new IllegalArgumentException("Unsupported GraphQL request " + value + " of type " + value.getClass().getName());
+
+		GraphQlRequest query = (GraphQlRequest) value;
+		String requestName = resolveRequestName(query);
+
+		String indent = " "; // output formatting
+		return generateRequest(query, indent, requestName);
+	}
+
+	private String resolveRequestName(GraphQlRequest query) {
+		String requestName = query.entityType().getShortName();
+		String queryTypeName = removeSuffixIfEligible(requestName, "Request");
+		return uncapitalize(queryTypeName);
+	}
+
+	private String generateRequest(GraphQlRequest request, String indent, String requestName) {
+		StringBuilder writer = new StringBuilder();
 
 		// initiate the query
-		if (request instanceof GraphQlMutationRequest) {
+		if (request instanceof GraphQlMutationRequest)
 			writer.append("mutation {\n" + indent);
-		} else if (request instanceof GraphQlQueryRequest) {
+		else if (request instanceof GraphQlQueryRequest)
 			writer.append("query {\n" + indent);
-		} else {
+		else
 			throw new IllegalStateException("Unsupported GraphQL request type " + request);
-		}
-		writer.append(responseAlias + " : " + requestName); // by convention, TODO add alias
-		String windent = indent + "    ";
-		String args = parseParameter(request, windent);
+
+		writer.append(RESPONSE_ALIAS + ": " + requestName); // by convention, TODO add alias
+		String args = encodeArguments(request);
 		if (!args.isEmpty())
 			writer.append("(" + args + ")"); // if there are parameters
 
-		writer.append("{\n");
+		writer.append(" {\n");
 
-		// there must at least be a "select" property, otherwise it is not a GraphQL
-		// query
-		Property selectProperty = queryType.findProperty("select"); // by convention
-		GenericModelType selectType = selectProperty.getType();
+		GenericEntity select = resolveSelect(request, requestName);
+		writer.append(encodeEntitySelection(select, indent + " ") + "\n" + indent + "}");
 
-		if (selectType.isEntity()) {
-
-			GenericEntity select = selectProperty.get(request);
-			writer.append(indent + queryEntity(select, indent + " ") + "\n" + indent + "}");
-
-		} else if (selectType.isCollection() && selectType.areCustomInstancesReachable()) {
-
-			Collection<? super GenericEntity> collection = (Collection<? super GenericEntity>) selectProperty.get(request);
-			int n = collection.size();
-			if (n != 1) {
-				String error = "Malformed GraphQlRequest with collection \"" + selectType.toString() + "\" contains " + n
-						+ " elements. Must be exactly one.";
-				throw new MarshallException(error);
-			}
-			Object object = collection.iterator().next();
-			if (!(object instanceof GenericEntity)) {
-				String error = "Malformed GraphQlRequest. Element type of collection \"" + selectType.toString() + "\" is \""
-						+ object.getClass().getTypeName() + "\"";
-				throw new MarshallException(error);
-			}
-			GenericEntity select = (GenericEntity) object;
-			writer.append(indent + queryEntity(select, indent + " ") + "\n" + indent + "}");
-
-		} else {
-			String error = "The \"select\" property of the GraphQlRequest \"" + requestName + "\" has unsupported type \"" + selectType + "\"";
-			throw new MarshallException(error);
-		}
-
-		// TODO: evals-to checken und typen kontrollieren
-		// queryType.getEvaluatesTo().isAssignableFrom(select.entityType());
-
-		// close the query
 		writer.append("\n}\n");
+
+		return writer.toString();
 	}
 
-	/**
-	 * Select GraphQl output fields from entity. The entity may provide args (GraphQlFieldArguments) for some of its
-	 * properties.
-	 * 
-	 * @param entity
-	 * @param indent
-	 * @return
-	 */
-	private String queryEntity(GenericEntity entity, String indent) {
+	private GenericEntity resolveSelect(GraphQlRequest request, String requestName) {
+		Property selectProperty = request.entityType().getProperty(SELECTION_PROPERTY_NAME);
 
+		GenericModelType selectType = selectProperty.getType();
+		if (!selectType.isEntity())
+			throw new MarshallException("'select' property of the GraphQlRequest '" + requestName + "' has unsupported type '" + selectType + "'");
+
+		return selectProperty.get(request);
+	}
+
+	private String encodeEntitySelection(GenericEntity entity, String indent) {
 		if (entity == null)
 			return "";
 
@@ -164,214 +139,124 @@ public class GraphQlRequestMarshaller implements Marshaller {
 			return "";
 
 		// if it is an entity it might have arguments attached for specific properties.
-		Map<String, String> args = getArgs(entity, indent + " ");
+		Map<String, String> args = resolveFieldArgs(entity);
 
-		List<String> entries = loopProperties(entity, args, indent);
+		List<String> entries = encodePropertySelections(entity, args, indent);
+		if (entries.isEmpty())
+			throw new MarshallException("Malformed GraphQlRequest with no selected return fields on entity: " + entity);
 
-		if (entries.isEmpty()) {
-			String error = "Malformed GraphQlRequest with no selected return fields";
-			throw new MarshallException(error);
-		}
-
-		// TODO: is this the right place for "id" mapping ?
-		return entries.stream().map(e -> {
-			if (e != null && e.equals("id_")) {
-				return "id";
-			}
-			return e;
-		}).collect(Collectors.joining("\n" + indent, indent, ""));
+		return entries.stream() //
+				.collect(joining("\n" + indent, indent, ""));
 	}
 
 	/**
-	 * GraphQl types can provide arguments for some of their named properties. In this case there must be propertyname_args
-	 * extra property of type {@link GraphQlFieldArguments} containing the arguments. In a GraphQl schema, this corresponds
-	 * to InputTypes.
+	 * @return A map from property name to the encoded arguments
 	 * 
-	 * This function reads all GraphQlFieldArguments (in depth) and returns them in a map to link them to the respective
-	 * properties.
-	 * 
-	 * @param entity
-	 * @return A map from propertyname to the associated arguments
+	 * @see GraphQlFieldArguments
 	 */
-	private Map<String, String> getArgs(GenericEntity entity, String indent) {
-
+	private Map<String, String> resolveFieldArgs(GenericEntity entity) {
 		if (!(entity instanceof HasGraphQlFieldArguments))
 			return null;
 
-		Map<String, String> args = new HashMap<>();
+		Map<String, String> args = newMap();
 
-		EntityType<GenericEntity> et = entity.entityType();
-		for (Property p : et.getProperties()) {
-
+		for (Property p : entity.entityType().getDeclaredProperties()) {
+			// arguments must be entities
 			Object value = p.get(entity);
 			if (value == null)
 				continue;
 
-			GenericModelType type = p.getType();
-
-			// arguments must be entities
-			if (!type.isEntity())
-				continue;
-
-			if (!(value instanceof GraphQlFieldArguments))
-				continue;
-
 			String name = p.getName(); // convention: propertyname_args
+			name = removeSuffixIfEligible(name, "_args_");
 
-			// remove the trailing "_args_"
-			if (name.contains("_args_"))
-				name = name.substring(0, name.lastIndexOf("_args_"));
-
-			String parseInputType = parseParameter((GenericEntity) value, indent);
-			args.put(name, "(" + parseInputType + ")");
+			String arguments = encodeArguments((GenericEntity) value);
+			args.put(name, "(" + arguments + ")");
 		}
 
 		return args;
 	}
 
-	/**
-	 * Loops all properties of entity under the assumption of it being {@link GraphQlFieldArguments} (see also GraphQl
-	 * InputType) OR a GraphQl request. GraphQlRequest.
-	 * 
-	 * @param entity
-	 * @param indent
-	 * @return
-	 */
-	private String parseParameter(GenericEntity entity, String indent) {
-		// input types cannot have collections inside. See GraphQl documentation.
-
-		// boolean isInputType = entity instanceof GraphQlFieldArguments;
+	private String encodeArguments(GenericEntity entity) {
 		boolean isRequest = entity instanceof GraphQlRequest;
-		// if (!isRequest && !isInputType)
-		// return ""; // incompatible input data
+		EntityType<GenericEntity> entityType = entity.entityType();
 
-		List<String> arg = new ArrayList<String>();
+		List<String> args = newList();
 
 		EntityType<GenericEntity> et = entity.entityType();
 		for (Property p : et.getProperties()) {
+			EntityType<?> firstDeclaringType = p.getFirstDeclaringType();
+			if (firstDeclaringType == GenericEntity.T)
+				continue;
 
 			Object value = p.get(entity);
 			if (value == null) // no data
 				continue;
 
-			GenericModelType type = p.getType();
 			String name = p.getName();
 
-			if (isRequest) {
-				// TODO : improve
-				if (name.equals("select") || name.equals("metaData") || name.equals("authorization") || name.equals("contentType")
-						|| name.equals("domainId"))
-					continue;
-			}
-
-			// entity must be GraphQlFieldArguments
-			if (type.isEntity()) {
-				// if (!(value instanceof GraphQlFieldArguments)) {
-				//
-				// String error = "Property of \"" + et.getShortName() + "\" has type " + type.getTypeName()
-				// + " is not an GraphQlFieldArguments but must be.";
-				// throw new MarshallException(error);
-				// }
-				arg.add(name + " : { " + parseParameter((GenericEntity) value, indent + " ") + "}");
-
-			} else if (type.isCollection()) {
-
-				// this must be a filled collection of simple types. See GraphQl inputTypes.
-
-				Collection<?> collection = (Collection<?>) p.get(entity);
-				if (collection.isEmpty())
-					continue;
-				String argList = "";
-				String commaArgList = "";
-				String windent = indent + " ";
-				for (Object object : collection) {
-
-					if (object instanceof GenericEntity) {
-						GenericEntity genericEntity = (GenericEntity) object;
-						argList += commaArgList + "{ " + parseParameter(genericEntity, windent) + " }";
-					} else {
-						String typeName = object.getClass().getTypeName();
-						argList += commaArgList + simpleType(object, typeName);
-					}
-
-					commaArgList = ", ";
-				}
-				arg.add(name + " : [" + argList + "]");
-
-			} else if (type.isSimple()) {
-
-				if (name.equals("id_")) {
-					name = "id";
-				}
-
-				String typeName = type.getTypeName();
-				arg.add(name + " : " + simpleType(value, typeName));
-
-			} else if (type.isEnum()) {
-
-				arg.add(name + " : " + ((Enum<?>) value).name());
-
-			} else {
-
-				String error = "Unknown property of GraphQlFieldArgument: \"" + name + "\" value \"" + value + "\"";
-				throw new MarshallException(error);
-			}
-		}
-
-		return arg.stream().collect(Collectors.joining(", "));
-	}
-
-	/**
-	 * Actual output marshalling of simple types.
-	 * 
-	 * @param value
-	 * @param typeName
-	 * @return
-	 */
-	private String simpleType(Object value, String typeName) {
-
-		String arg = "";
-
-		if (typeName == "date") {
-			Date date = (Date) value;
-			String timestamp = new SimpleDateFormat("\"yyyy-MM-dd'T'h:m:ssZ\"").format(date);
-			arg += timestamp;
-
-		} else if (typeName == "string" || typeName == "java.lang.String") {
-
-			String str = (String) value;
-			arg += "\"" + escape(str) + "\"";
-
-		} else if (typeName == "boolean") {
-
-			if ((boolean) value)
-				arg += "true";
-			else
-				arg += "false";
-
-		} else {
-			arg += value;
-		}
-		return arg;
-	}
-
-	/**
-	 * Loops over all properties of entity (in-depth), adds provided arguments from map and marshalls to a query output.
-	 * 
-	 * @param entity
-	 * @param args
-	 * @param indent
-	 * @return
-	 */
-	private List<String> loopProperties(GenericEntity entity, Map<String, String> args, String indent) {
-		List<String> entries = new ArrayList<>();
-
-		EntityType<GenericEntity> et = entity.entityType();
-		for (Property p : et.getProperties()) {
-
-			if (p.getDeclaringType().equals(GenericEntity.T)) {
+			if (isRequest && (firstDeclaringType != entityType || name.equals(SELECTION_PROPERTY_NAME)))
 				continue;
-			}
+
+			String arg = encodeArgument(entity, p.getType(), value);
+			if (arg != null)
+				args.add(removeTrailingUnderscore(name) + ": " + arg);
+		}
+
+		return args.stream().collect(Collectors.joining(", "));
+	}
+
+	private String encodeArgument(GenericEntity entity, GenericModelType type, Object value) {
+		GenericModelType propType = type;
+
+		if (propType.isBase())
+			propType = BaseType.INSTANCE.getActualType(value);
+
+		if (propType.isEntity())
+			return "{" + encodeArguments((GenericEntity) value) + "}";
+
+		if (propType.isSimple())
+			return simpleType(value, propType.getTypeCode());
+
+		if (propType.isEnum())
+			return ((Enum<?>) value).name();
+
+		if (propType.isCollection()) {
+			Collection<?> collection = (Collection<?>) value;
+			if (collection.isEmpty())
+				return null;
+
+			GenericModelType elementType = ((CollectionType) propType).getCollectionElementType();
+
+			StringJoiner sj = new StringJoiner(", ", "[", "]");
+			for (Object element : collection)
+				if (element != null)
+					sj.add(encodeArgument(entity, elementType, element));
+
+			return sj.toString();
+		}
+
+		return null;
+	}
+
+	private String simpleType(Object value, TypeCode typeCode) {
+		switch (typeCode) {
+			case dateType:
+				return new SimpleDateFormat("\"yyyy-MM-dd'T'h:m:ssZ\"").format((Date) value);
+			case stringType:
+				return "\"" + escape((String) value) + "\"";
+			case booleanType:
+				return (boolean) value ? "true" : "false";
+			default:
+				return "" + value;
+		}
+	}
+
+	private List<String> encodePropertySelections(GenericEntity entity, Map<String, String> args, String indent) {
+		List<String> entries = newList();
+
+		for (Property p : entity.entityType().getProperties()) {
+			if (p.getDeclaringType() == GenericEntity.T)
+				continue;
 
 			Object value = p.get(entity);
 			if (value == null)
@@ -380,69 +265,57 @@ public class GraphQlRequestMarshaller implements Marshaller {
 			GenericModelType type = p.getType();
 
 			String name = p.getName();
-			String arg = args == null ? "" : (args.containsKey(name) ? args.get(name) : "");
+			String arg = args != null && args.containsKey(name) ? args.get(name) : "";
 
-			if (type.isCollection()) {
-
-				Collection<? super GenericEntity> collection = ((Collection<? super GenericEntity>) value);
-				int n = collection.size();
-				if (n == 0)
-					continue;
-				if (n != 1) {
-					String error = "Malformed GraphQl-request-field with collection \"" + type.toString() + "\" contains " + n
-							+ " elements. Must be exactly one.";
-					throw new MarshallException(error);
-				}
-
-				if (type.areEntitiesReachable()) {
-
-					Object object = collection.iterator().next();
-					if (!(object instanceof GenericEntity)) {
-						String error = "Element type of collection \"" + type.toString() + "\" is \"" + object.getClass().getTypeName() + "\"";
-						throw new MarshallException(error);
-					}
-
-					GenericEntity nextEntity = (GenericEntity) object;
-
-					String queryEntity = queryEntity(nextEntity, indent + " ");
-					if (queryEntity != "")
-						entries.add(name + arg + "{" + queryEntity + "\n" + indent + "}");
-
-				} else {
-
-					entries.add(name + arg);
-				}
-			} else if (type.isEntity()) {
-
-				GenericEntity properyEntity = p.get(entity);
-				String queryEntity = queryEntity(properyEntity, indent + " ");
-				if (queryEntity != "")
-					entries.add(name + arg + "{\n" + queryEntity + "\n" + indent + "}");
-
-			} else {
-
-				entries.add(name + arg);
-			}
+			String propertySelection = encodePropertySelection(name, type, value, indent);
+			if (propertySelection != null)
+				entries.add(removeTrailingUnderscore(name) + arg + propertySelection);
 		}
+
 		return entries;
 	}
 
-	// We do not need GraphQL -> QueryByPrototype marshalling
-	@Override
-	public Object unmarshall(InputStream in, GmDeserializationOptions options) throws MarshallException {
-		throw new UnsupportedOperationException();
+	private String encodePropertySelection(String name, GenericModelType type, Object value, String indent) {
+		if (type.isEntity()) {
+			GenericEntity properyEntity = (GenericEntity) value;
+			String queryEntity = encodeEntitySelection(properyEntity, indent + " ");
+			if (queryEntity != "")
+				return " {\n" + queryEntity + "\n" + indent + "}";
+
+		} else if (type.isCollection()) {
+			Collection<?> collection = ((Collection<?>) value);
+			if (collection.isEmpty())
+				return null;
+
+			if (collection.size() != 1)
+				throw new MarshallException("Malformed GraphQl-request-field, collection " + type.getTypeSignature() + "#" + name + " contains "
+						+ collection.size() + " elements. Must be exactly 1.");
+
+			if (!type.areEntitiesReachable())
+				return "";
+
+			Object object = first(collection);
+			if (!(object instanceof GenericEntity))
+				throw new MarshallException(
+						"Element of collection " + type.getTypeSignature() + "#" + name + " is not an entity, but: " + object.getClass().getName());
+
+			String entitySelection = encodeEntitySelection((GenericEntity) object, indent + " ");
+			if (entitySelection != "")
+				return " {\n" + entitySelection + "\n" + indent + "}";
+
+		} else {
+			return "";
+		}
+
+		return null;
 	}
 
-	/**
-	 * escape()
-	 *
-	 * Escape a give String to make it safe to be printed or stored.
-	 *
-	 * @param s
-	 *            The input String.
-	 * @return The output String.
-	 **/
-	public static String escape(String s) {
+	private String removeTrailingUnderscore(String name) {
+		return removeSuffixIfEligible(name, "_");
+	}
+
+	/** Escape a give String to make it safe to be printed or stored. **/
+	private static String escape(String s) {
 		//@formatter:off
 		return s.replace("\\", "\\\\")
 				.replace("\t", "\\t")
