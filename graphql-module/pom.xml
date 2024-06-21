@@ -16,11 +16,6 @@
         </dependency>
         <dependency>
             <groupId>hiconic.ext.graphql</groupId>
-            <artifactId>graphql-by-prototype-processing</artifactId>
-            <version>${V.hiconic.ext.graphql}</version>
-        </dependency>
-        <dependency>
-            <groupId>hiconic.ext.graphql</groupId>
             <artifactId>graphql-deployment-model</artifactId>
             <version>${V.hiconic.ext.graphql}</version>
             <?tag asset ?>
