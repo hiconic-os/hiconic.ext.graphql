@@ -40,6 +40,7 @@ import hiconic.ext.graphql.api.model.GraphQlQuery;
 import hiconic.ext.graphql.api.model.GraphQlQueryRequest;
 import hiconic.ext.graphql.api.model.GraphQlRequest;
 import hiconic.ext.graphql.api.model.HasGraphQlFieldArguments;
+import hiconic.ext.graphql.api.model.HasGraphQlTypeConditions;
 
 public class GraphQlRequestMarshaller implements Marshaller {
 
@@ -72,7 +73,7 @@ public class GraphQlRequestMarshaller implements Marshaller {
 		StringWriter sw = new StringWriter();
 		jsonMarshaller.marshall(sw, queryEntity, options);
 		String jsonContent = sw.toString();
-		return jsonContent.replace("\"_type\": \"hiconic.ext.graphql.api.model.GraphQlQuery\", \"_id\": \"0\",", "");
+		return jsonContent.replace("\"_type\": \"" + GraphQlQuery.T.getTypeSignature() + "\", \"_id\": \"0\",", "");
 	}
 
 	private String encodeRequestToQueryString(Object value) {
@@ -254,6 +255,9 @@ public class GraphQlRequestMarshaller implements Marshaller {
 	private List<String> encodePropertySelections(GenericEntity entity, Map<String, String> args, String indent) {
 		List<String> entries = newList();
 
+		boolean hasTypeConditions = entity instanceof HasGraphQlTypeConditions;
+		Collection<?> typeConditions = null;
+
 		for (Property p : entity.entityType().getProperties()) {
 			if (p.getDeclaringType() == GenericEntity.T)
 				continue;
@@ -261,6 +265,12 @@ public class GraphQlRequestMarshaller implements Marshaller {
 			Object value = p.get(entity);
 			if (value == null)
 				continue;
+
+			if (hasTypeConditions && HasGraphQlTypeConditions.TYPE_CONDITIONS_PROPERTY_NAME.equals(p.getName())) {
+				if (value instanceof Collection)
+					typeConditions = (Collection<?>) value;
+				continue;
+			}
 
 			GenericModelType type = p.getType();
 
@@ -272,6 +282,21 @@ public class GraphQlRequestMarshaller implements Marshaller {
 				entries.add(removeTrailingUnderscore(name) + arg + propertySelection);
 		}
 
+		if (typeConditions != null) {
+			for (Object object : typeConditions) {
+				if (!(object instanceof GenericEntity))
+					continue;
+				
+				GenericEntity typeConditionEntity = (GenericEntity) object;
+				String innerSelection = encodeEntitySelection(typeConditionEntity, indent + " ");
+
+				entries.add("... on " + typeConditionEntity.entityType().getShortName() + " {");
+				entries.add(innerSelection.substring(indent.length()));
+				entries.add("}");
+			}
+			
+		}
+		
 		return entries;
 	}
 

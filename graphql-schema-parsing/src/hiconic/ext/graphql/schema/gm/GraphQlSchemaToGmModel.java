@@ -1,8 +1,11 @@
 package hiconic.ext.graphql.schema.gm;
 
+import static com.braintribe.utils.lcd.CollectionTools2.isEmpty;
 import static com.braintribe.utils.lcd.CollectionTools2.newList;
 import static com.braintribe.utils.lcd.CollectionTools2.newMap;
 import static com.braintribe.utils.lcd.CollectionTools2.newSet;
+import static hiconic.ext.graphql.api.model.GraphQlQueryRequest.SELECTION_PROPERTY_NAME;
+import static hiconic.ext.graphql.api.model.HasGraphQlTypeConditions.TYPE_CONDITIONS_PROPERTY_NAME;
 
 import java.util.Arrays;
 import java.util.List;
@@ -51,6 +54,7 @@ import hiconic.ext.graphql.api.model.GraphQlMutationRequest;
 import hiconic.ext.graphql.api.model.GraphQlQueryRequest;
 import hiconic.ext.graphql.api.model.GraphQlRequest;
 import hiconic.ext.graphql.api.model.HasGraphQlFieldArguments;
+import hiconic.ext.graphql.api.model.HasGraphQlTypeConditions;
 import hiconic.gm.model.builder.GmCustomTypeBuilder;
 import hiconic.gm.model.builder.GmEntityTypeBuilder;
 import hiconic.gm.model.builder.GmEnumTypeBuilder;
@@ -104,10 +108,12 @@ public class GraphQlSchemaToGmModel {
 
 	private final Map<String, GmType> schemaTypes = newMap();
 	private final Map<String, GmEntityTypeBuilder> schemaTypeEntityBuilders = newMap();
+	private final Map<String, GmListType> listTypes = newMap();
 	private final Map<Type<?>, GmType> gqlTypeToGmType = newMap();
 
 	private final Map<GmEntityType, Set<GmEntityType>> schemaTypeToSubType = newMap();
 	private final Map<GmEntityType, GmEntityTypeBuilder> schemaTypeToFaBuilder = newMap();
+	private final Set<GmEntityType> polymorphicPropertyTypes = newSet();
 	private final List<GmEntityType> hasFaTypes = newList();
 
 	private final List<InputObjectTypeDefinition> inputObjectTypeDefinitions = newList();
@@ -159,6 +165,7 @@ public class GraphQlSchemaToGmModel {
 		createTypeStubs();
 		assignSuperTypes();
 		createProperties();
+		createTypeConditionTypes();
 
 		createFieldArgs();
 		finalizerFieldArgsSuperTypes();
@@ -301,7 +308,7 @@ public class GraphQlSchemaToGmModel {
 	}
 
 	private void createRequests() {
-		RESERVED_PROPERTY_NAMES.addAll(Arrays.asList("select", "domainId", "sessionId"));
+		RESERVED_PROPERTY_NAMES.addAll(Arrays.asList(SELECTION_PROPERTY_NAME, "domainId", "sessionId"));
 
 		// Request Base
 		GmEntityTypeBuilder requestBaseBuilder = createBaseRequestTypeStub(requestBaseTypeSimpleName);
@@ -402,6 +409,10 @@ public class GraphQlSchemaToGmModel {
 		return createTypeStub(simpleName, isAbstract, "api.args", apiBuilder, false);
 	}
 
+	private GmEntityTypeBuilder createTypeConditionsTypeStub(String simpleName) {
+		return createTypeStub(simpleName, false, "api.typeconditions", apiBuilder, false);
+	}
+
 	private GmEntityTypeBuilder createRequestTypeStub(String simpleName, ReqType reqType, boolean isAbstract) {
 		return createTypeStub(simpleName, isAbstract, "api." + reqType.name(), apiBuilder, false);
 	}
@@ -481,8 +492,8 @@ public class GraphQlSchemaToGmModel {
 	// ##############################################
 
 	private void createProperties() {
-		createProperties(dataTypeDefinitions);
-		createProperties(interfaceTypeDefinitions);
+		createDataProperties(dataTypeDefinitions);
+		createDataProperties(interfaceTypeDefinitions);
 
 		for (InputObjectTypeDefinition td : inputObjectTypeDefinitions) {
 			GmEntityTypeBuilder builder = schemaTypeEntityBuilders.get(td.getName());
@@ -490,16 +501,24 @@ public class GraphQlSchemaToGmModel {
 		}
 	}
 
-	private void createProperties(List<? extends ImplementingTypeDefinition<?>> tds) {
+	private void createDataProperties(List<? extends ImplementingTypeDefinition<?>> tds) {
 		for (ImplementingTypeDefinition<?> td : tds)
-			createProperties(td.getName(), td.getFieldDefinitions());
+			createDataProperties(td.getName(), td.getFieldDefinitions());
 	}
 
-	private void createProperties(String simpleName, List<FieldDefinition> fds) {
+	private void createDataProperties(String simpleName, List<FieldDefinition> fds) {
 		GmEntityTypeBuilder builder = schemaTypeEntityBuilders.get(simpleName);
 
-		for (FieldDefinition fd : fds)
-			createProperty(builder, fd.getName(), fd.getType());
+		for (FieldDefinition fd : fds) {
+			GmPropertyBuilder propBuilder = createProperty(builder, fd.getName(), fd.getType());
+
+			GmType propType = propBuilder.it.getType();
+			Set<GmEntityType> subTypes = schemaTypeToSubType.get(propType);
+
+			boolean isPolymorphic = !isEmpty(subTypes);
+			if (isPolymorphic)
+				polymorphicPropertyTypes.add((GmEntityType) propType); // only GmEntityTypes have sub-types
+		}
 	}
 
 	private void createInputProperties(GmEntityTypeBuilder builder, List<InputValueDefinition> ivds) {
@@ -551,7 +570,26 @@ public class GraphQlSchemaToGmModel {
 	}
 
 	// ##############################################
-	// ## . . . . . . . . Helpers . . . . . . . . .##
+	// ## . . . . . . Type Conditions . . . . . . .##
+	// ##############################################
+
+	private void createTypeConditionTypes() {
+		for (GmEntityType polymorphicPropertyType : polymorphicPropertyTypes)
+			createTypeConditionType(polymorphicPropertyType);
+	}
+
+	private void createTypeConditionType(GmEntityType polymorphicPropertyType) {
+		String simpleName = getSimpleName(polymorphicPropertyType) + "_TypeConditions";
+
+		GmEntityTypeBuilder tcBuilder = createTypeConditionsTypeStub(simpleName);
+		tcBuilder.it.getSuperTypes().add(polymorphicPropertyType);
+		tcBuilder.it.getSuperTypes().add(apiBuilder.getType(HasGraphQlTypeConditions.T));
+
+		tcBuilder.createProperty(TYPE_CONDITIONS_PROPERTY_NAME, resolveGmListType(polymorphicPropertyType));
+	}
+
+	// ##############################################
+	// ## . . . . . . . Field Args . . . . . . . . ##
 	// ##############################################
 
 	private void createFieldArgs() {
@@ -650,16 +688,21 @@ public class GraphQlSchemaToGmModel {
 
 	private GmType resolveGmListType(ListType lt) {
 		GmType elementType = resolveGmType(lt.getType());
+		return resolveGmListType(elementType);
+	}
 
+	private GmType resolveGmListType(GmType elementType) {
 		String typeSignature = "list<" + elementType.getTypeSignature() + ">";
 
-		GmListType listType = GmListType.T.create();
-		listType.setElementType(elementType);
-		listType.setTypeSignature(typeSignature);
-		listType.setGlobalId("type:" + typeSignature);
-		listType.setDeclaringModel(elementType.getDeclaringModel());
+		return listTypes.computeIfAbsent(typeSignature, ts -> {
+			GmListType listType = GmListType.T.create();
+			listType.setElementType(elementType);
+			listType.setTypeSignature(typeSignature);
+			listType.setGlobalId("type:" + typeSignature);
+			listType.setDeclaringModel(elementType.getDeclaringModel());
 
-		return listType;
+			return listType;
+		});
 	}
 
 	@SuppressWarnings("rawtypes")

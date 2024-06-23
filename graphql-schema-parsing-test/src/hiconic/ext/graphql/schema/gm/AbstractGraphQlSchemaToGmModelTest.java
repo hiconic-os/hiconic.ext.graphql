@@ -36,6 +36,7 @@ import hiconic.ext.graphql.api.model.GraphQlInputType;
 import hiconic.ext.graphql.api.model.GraphQlMutationRequest;
 import hiconic.ext.graphql.api.model.GraphQlQueryRequest;
 import hiconic.ext.graphql.api.model.GraphQlRequest;
+import hiconic.ext.graphql.api.model.HasGraphQlTypeConditions;
 import hiconic.ext.graphql.api.model.result.GraphQlResult;
 
 /**
@@ -55,6 +56,7 @@ public abstract class AbstractGraphQlSchemaToGmModelTest {
 	private static final String API_PACKAGE_BASE = MODEL_PACKAGE_BASE + ".api.";
 	private static final String INPUT_PACKAGE_BASE = API_PACKAGE_BASE + "input.";
 	private static final String FIELD_ARGS_PACKAGE_BASE = API_PACKAGE_BASE + "args.";
+	private static final String TYPE_CONDITIONS_PACKAGE_BASE = API_PACKAGE_BASE + "typeconditions.";
 	private static final String QUERY_PACKAGE_BASE = API_PACKAGE_BASE + "query.";
 	private static final String MUTATION_PACKAGE_BASE = API_PACKAGE_BASE + "mutation.";
 	private static final String DATA_PACKAGE_BASE = MODEL_PACKAGE_BASE + ".data.";
@@ -64,6 +66,7 @@ public abstract class AbstractGraphQlSchemaToGmModelTest {
 	protected static final String GraphQlQueryRequestSIG = GraphQlQueryRequest.T.getTypeSignature();
 	protected static final String GraphQlMutationRequestSIG = GraphQlMutationRequest.T.getTypeSignature();
 	protected static final String GraphQlInputTypeSIG = GraphQlInputType.T.getTypeSignature();
+	protected static final String HasGraphQlTypeConditionsSIG = HasGraphQlTypeConditions.T.getTypeSignature();
 
 	protected static final String BaseRequestSIG = apiSig("GraphqlSchemaTestRequest");
 	protected static final String BaseQueryRequestSIG = queryReqSig("GraphqlSchemaTestQueryRequest");
@@ -272,4 +275,8 @@ public abstract class AbstractGraphQlSchemaToGmModelTest {
 		return FIELD_ARGS_PACKAGE_BASE + simpleName;
 	}
 
+	protected static String typeConditionsSig(String simpleName) {
+		return TYPE_CONDITIONS_PACKAGE_BASE + simpleName;
+	}
+	
 }

@@ -31,7 +31,7 @@ import com.braintribe.model.generic.reflection.EntityTypes;
  * }
  * </pre>
  * 
- * Movie has a field called "reviews" which has two arguments.
+ * Movie has a field called "reviews" which cannot be simply retrieved, but takes two arguments - page, limit.
  * <p>
  * 
  * Movie would be part of data model:

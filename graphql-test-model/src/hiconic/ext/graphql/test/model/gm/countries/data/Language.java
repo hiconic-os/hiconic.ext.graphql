@@ -2,20 +2,13 @@ package hiconic.ext.graphql.test.model.gm.countries.data;
 
 import java.util.Date;
 
-import com.braintribe.model.generic.GenericEntity;
 import com.braintribe.model.generic.reflection.EntityType;
 import com.braintribe.model.generic.reflection.EntityTypes;
 
-public interface Language extends GenericEntity {
+public interface Language extends HasNameAndCode {
 
 	EntityType<Language> T = EntityTypes.T(Language.class);
 
-	String getCode();
-	void setCode(String code);
-	
-	String getName();
-	void setName(String name);
-	
 	String getNative();
 	void setNative(String native_);
 	

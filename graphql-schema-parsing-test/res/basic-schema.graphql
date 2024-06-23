@@ -104,3 +104,10 @@ type TypeU2 {
 }
 
 union UnionType = TypeU1 | TypeU2
+
+""" For every polymorphic property type we create a special TypeConditions type in api model - see [HasGraphQlTypeConditions]"""
+type PolymorphicPropsType {
+	union: UnionType
+	union2: UnionType
+	iface: SuperIface
+}

@@ -22,6 +22,7 @@ import hiconic.ext.graphql.test.model.gm.countries.api.input.StringQueryOperator
 import hiconic.ext.graphql.test.model.gm.countries.api.query.ContinentsRequest;
 import hiconic.ext.graphql.test.model.gm.countries.api.query.LanguageRequest;
 import hiconic.ext.graphql.test.model.gm.countries.api.query.UnderscorePropsRequest;
+import hiconic.ext.graphql.test.model.gm.countries.api.typeconditions.HasNameAndCode_TypeConditions;
 import hiconic.ext.graphql.test.model.gm.countries.data.Continent;
 import hiconic.ext.graphql.test.model.gm.countries.data.Country;
 import hiconic.ext.graphql.test.model.gm.countries.data.DataTypeWithUnderscores;
@@ -53,7 +54,12 @@ public class GraphQlRequestMarshallerTest {
 		query.setCode("la"); // Latina
 		query.setSessionId(""); // should be ignored
 
-		assertMarshallsQuery(query, "value: language(code: \"la\") {", "native", "}");
+		// @formatter:off
+		assertMarshallsQuery(query, 
+				"value: language(code: \"la\") {", 
+					"native", 
+				"}");
+		// @formatter:on
 	}
 
 	@Test
@@ -74,7 +80,14 @@ public class GraphQlRequestMarshallerTest {
 		query.setSelect(continent);
 		query.setFilter(filter);
 
-		assertMarshallsQuery(query, "value: continents(filter: {code: {eq: \"SA\"}}) {", "countries {", "name", "}", "}");
+		// @formatter:off
+		assertMarshallsQuery(query, 
+				"value: continents(filter: {code: {eq: \"SA\"}}) {", 
+					"countries {", 
+						"name", 
+					"}", 
+				"}");
+		// @formatter:on
 	}
 
 	@Test
@@ -95,7 +108,12 @@ public class GraphQlRequestMarshallerTest {
 		query.setFilter(filter);
 		query.setSelect(continent);
 
-		assertMarshallsQuery(query, "value: continents(filter: {code: {in: [\"SA\", \"NA\"]}}) {", "countries {", "name", "}", "}");
+		// @formatter:off
+		assertMarshallsQuery(query, 
+				"value: continents(filter: {code: {in: [\"SA\", \"NA\"]}}) {", 
+					"countries {", "name", "}", 
+				"}");
+		// @formatter:on
 	}
 
 	@Test
@@ -119,8 +137,15 @@ public class GraphQlRequestMarshallerTest {
 		query.setSelect(continent);
 
 		// This query actually works on https://countries.trevorblades.com/
-		// The "lang" argument controls the language in which the name is written
-		assertMarshallsQuery(query, "value: continents {", "countries {", "name(lang: \"de\")", "}", "name(lang: \"de\")", "}");
+		// The "lang" argument controls the language in which the name is returned
+		// @formatter:off
+		assertMarshallsQuery(query, 
+				"value: continents {", 
+				"countries {", 
+					"name(lang: \"de\")", 
+				"}", 
+				"name(lang: \"de\")", "}");
+		// @formatter:on
 	}
 
 	@Test
@@ -134,11 +159,48 @@ public class GraphQlRequestMarshallerTest {
 		query.setName__("John");
 		query.setSelect(d);
 
-		assertMarshallsQuery(query, "value: underscoreProps(id: \"25\", name_: \"John\") {", "age_", "id", "}");
+		// @formatter:off
+		assertMarshallsQuery(query, 
+				"value: underscoreProps(id: \"25\", name_: \"John\") {", 
+					"age_", 
+					"id", 
+				"}");
+		// @formatter:on
 	}
 
 	// With type condition
-	// query{value:language(code:"la"){...on Language {native}}}
+	// query{value:language(code:"la"){...on Language{native} ...on Language{name}}}
+
+	@Test
+	public void testSimpleQuery_withTypeCondition() {
+		Language languageTc1 = Language.T.create();
+		languageTc1.setNative("");
+
+		Language languageTc2 = Language.T.create();
+		languageTc2.setRtl(true);
+
+		HasNameAndCode_TypeConditions select = HasNameAndCode_TypeConditions.T.create();
+		select.setName("");
+		select.getTypeConditions_().add(languageTc1);
+		select.getTypeConditions_().add(languageTc2);
+
+		LanguageRequest query = LanguageRequest.T.create();
+		query.setSelect(select);
+		query.setCode("la"); // Latina
+
+		// @formatter:off
+		assertMarshallsQuery(query, //
+				"value: language(code: \"la\") {",
+				    "name",
+				    "... on Language {", 
+				        "native", 
+				    "}", 
+				    "... on Language {", 
+				        "rtl", 
+				    "}", 
+				"}");
+		// @formatter:on
+	}
 
 	private void assertMarshallsQuery(GraphQlRequest query, String... expectedLines2) {
 		String queryQl = marshall(query);

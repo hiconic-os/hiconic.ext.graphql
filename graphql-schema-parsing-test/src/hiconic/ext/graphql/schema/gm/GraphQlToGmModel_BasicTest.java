@@ -9,6 +9,8 @@ import org.junit.Test;
 
 import com.braintribe.model.generic.GMF;
 
+import hiconic.ext.graphql.api.model.HasGraphQlTypeConditions;
+
 /**
  * Tests for {@link GraphQlSchemaToGmModel}
  * 
@@ -38,6 +40,9 @@ public class GraphQlToGmModel_BasicTest extends AbstractGraphQlSchemaToGmModelTe
 	private static final String InputTypeSIG = apiTypesSig("InputType");
 	private static final String UnderscorePropsInputTypeSIG = apiTypesSig("UnderscorePropsInputType");
 
+	private static final String UnionType_TypeConditionsSIG = typeConditionsSig("UnionType_TypeConditions");
+	private static final String SuperIface_TypeConditionsSIG = typeConditionsSig("SuperIface_TypeConditions");
+
 	// Requests
 
 	private static final String QueryRequestSIG = queryReqSig("QueryRequest");
@@ -62,6 +67,7 @@ public class GraphQlToGmModel_BasicTest extends AbstractGraphQlSchemaToGmModelTe
 
 		checkDataTypes();
 		checkInputTypes();
+		checkTypeConditionTypes();
 		checkRequestTypes();
 	}
 
@@ -112,6 +118,14 @@ public class GraphQlToGmModel_BasicTest extends AbstractGraphQlSchemaToGmModelTe
 		assertProperty("partition_", TYPE_STRING, false);
 		assertProperty("id__", TYPE_INTEGER, false);
 		assertProperty("underscore__", TYPE_INTEGER, false);
+	}
+
+	private void checkTypeConditionTypes() {
+		loadEntityType(UnionType_TypeConditionsSIG, false, UnionTypeSIG, HasGraphQlTypeConditionsSIG);
+		assertProperty(HasGraphQlTypeConditions.TYPE_CONDITIONS_PROPERTY_NAME, "list<" + UnionTypeSIG + ">", false);
+
+		loadEntityType(SuperIface_TypeConditionsSIG, false, SuperIfaceSIG, HasGraphQlTypeConditionsSIG);
+		assertProperty(HasGraphQlTypeConditions.TYPE_CONDITIONS_PROPERTY_NAME, "list<" + SuperIfaceSIG + ">", false);
 	}
 
 	private void checkRequestTypes() {
