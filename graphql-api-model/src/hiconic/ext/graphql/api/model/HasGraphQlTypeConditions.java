@@ -37,7 +37,7 @@ import com.braintribe.model.generic.reflection.EntityTypes;
  *
  * type Worker {
  * 	 name: String
- *   tool: Tool
+ * 	 tool: Tool
  * }
  * </pre>
  * 
@@ -46,14 +46,15 @@ import com.braintribe.model.generic.reflection.EntityTypes;
  * <pre>
  * query {
  * 	value: workerByName(name: "John Smith") {
- * 		name
+ *  	name
  *  	tool {
- *	 		toolName
- *	 		... on Hammer {
- *	 			weight
- * 			}
- *			... on Thermometer {
- *	 			minTemperature
+ *  		toolName
+ *  		... on Hammer {
+ *  			weight
+ *  		}
+ *  		... on Thermometer {
+ *  			minTemperature
+ *  			maxTemperature
  *  		}
  *  	}
  *  }
@@ -61,10 +62,12 @@ import com.braintribe.model.generic.reflection.EntityTypes;
  * </pre>
  * 
  * <b>API Model</b>
+ * <p>
+ * In order to support these type conditions, a special entity type is created for each polymorphic property type, in this case <i>Tool</i>.
  * 
  * <pre>
  * entity Tool_TypeConditions extends Tool, HasGraphQlTypeConditions {
- * 	List<Tool> typeConditions	
+ * 	List&lt;Tool&gt; typeConditions	
  * }
  * </pre>
  * 
@@ -72,11 +75,11 @@ import com.braintribe.model.generic.reflection.EntityTypes;
  * 
  * <pre>
  * Hammer hammer = Hammer.T.create();
- * hammer.setWeight(10);
+ * hammer.setWeight(0);
  * 
  * Thermometer thermometer = Thermometer.T.create();
- * thermometer.setMinTemperature(-50);
- * thermometer.setMaxTemperature(150);
+ * thermometer.setMinTemperature(0);
+ * thermometer.setMaxTemperature(0);
  *
  * Tool_TypeConditions tool = Tool_TypeConditions.T.create();
  * tool.setToolName("");
