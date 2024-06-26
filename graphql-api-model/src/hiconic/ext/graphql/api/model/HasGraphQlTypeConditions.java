@@ -67,7 +67,7 @@ import com.braintribe.model.generic.reflection.EntityTypes;
  * 
  * <pre>
  * entity Tool_TypeConditions extends Tool, HasGraphQlTypeConditions {
- * 	List&lt;Tool&gt; typeConditions	
+ * 	List&lt;Tool&gt; typeConditions_	
  * }
  * </pre>
  * 
@@ -83,8 +83,8 @@ import com.braintribe.model.generic.reflection.EntityTypes;
  *
  * Tool_TypeConditions tool = Tool_TypeConditions.T.create();
  * tool.setToolName("");
- * tool.getTypeConditions().add(hammer);
- * tool.getTypeConditions().add(thermometer);
+ * tool.getTypeConditions_().add(hammer);
+ * tool.getTypeConditions_().add(thermometer);
  * </pre>
  * 
  * @see "https://spec.graphql.org/October2021/#sec-Type-Conditions"
