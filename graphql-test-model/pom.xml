@@ -6,7 +6,7 @@
         <version>[4.0,4.1)</version>
     </parent>
     <artifactId>graphql-test-model</artifactId>
-    <version>4.0.4</version>
+    <version>4.0.5</version>
     <properties>
         <archetype>model</archetype>
     </properties>
