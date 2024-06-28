@@ -6,10 +6,7 @@ import static com.braintribe.utils.lcd.CollectionTools2.index;
 import static com.braintribe.utils.lcd.CollectionTools2.newMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.io.Reader;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -29,8 +26,8 @@ import com.braintribe.model.meta.data.constraint.Mandatory;
 import com.braintribe.model.processing.itw.analysis.JavaTypeAnalysis;
 import com.braintribe.testing.junit.assertions.assertj.core.api.ExtendedStringAssert;
 
-import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
+import hiconic.ext.graphql.ConvertGraphqlSchemaToModelsProcessor;
 import hiconic.ext.graphql._GraphqlApiModel_;
 import hiconic.ext.graphql.api.model.GraphQlInputType;
 import hiconic.ext.graphql.api.model.GraphQlMutationRequest;
@@ -208,13 +205,7 @@ public abstract class AbstractGraphQlSchemaToGmModelTest {
 	}
 
 	public static TypeDefinitionRegistry parse(File schemaFile) {
-		try (Reader reader = new BufferedReader(new FileReader(schemaFile))) {
-			SchemaParser schemaParser = new SchemaParser();
-			return schemaParser.parse(reader);
-
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		return ConvertGraphqlSchemaToModelsProcessor.parse(schemaFile);
 	}
 
 	private void verify(GmMetaModel model, String artifactId, String... deps) {
