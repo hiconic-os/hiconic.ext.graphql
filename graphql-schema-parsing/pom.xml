@@ -6,7 +6,7 @@
         <version>[4.0,4.1)</version>
     </parent>
     <artifactId>graphql-schema-parsing</artifactId>
-    <version>4.0.6</version>
+    <version>4.0.7</version>
     <properties/>
     <dependencies>
         <dependency>

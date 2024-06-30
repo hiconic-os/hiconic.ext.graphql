@@ -6,7 +6,7 @@
         <version>[4.0,4.1)</version>
     </parent>
     <artifactId>graphql-schema-api-model</artifactId>
-    <version>4.0.5</version>
+    <version>4.0.6</version>
     <properties>
         <archetype>model</archetype>
     </properties>
