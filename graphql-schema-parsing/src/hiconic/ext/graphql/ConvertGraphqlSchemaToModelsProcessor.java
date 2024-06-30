@@ -14,6 +14,8 @@ import com.braintribe.console.ConsoleOutputs;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reasons;
 import com.braintribe.gm.model.reason.essential.InvalidArgument;
+import com.braintribe.model.io.metamodel.GmSourceWriter;
+import com.braintribe.model.meta.GmMetaModel;
 import com.braintribe.model.processing.deployment.PublishModelProcessor;
 import com.braintribe.model.processing.service.api.ReasonedServiceProcessor;
 import com.braintribe.model.processing.service.api.ServiceRequestContext;
@@ -23,6 +25,7 @@ import com.braintribe.model.resource.utils.StreamPipeTransientResourceBuilder;
 import com.braintribe.model.service.api.result.Neutral;
 import com.braintribe.utils.FileTools;
 import com.braintribe.utils.ZipTools;
+import com.braintribe.utils.lcd.StringTools;
 import com.braintribe.utils.stream.pools.CompoundBlockPool;
 import com.braintribe.utils.stream.pools.SmartBlockPoolFactory;
 
@@ -47,6 +50,17 @@ public class ConvertGraphqlSchemaToModelsProcessor implements ReasonedServicePro
 				request.getPackageBase(), //
 				tdr);
 
+		File outDir = new File(request.getOutputDir());
+
+		if (request.getAsBuiltArtifacts())
+			projectBuiltArtifacts(models, outDir);
+		else
+			projectSources(models, outDir);
+
+		return Maybe.complete(Neutral.NEUTRAL);
+	}
+
+	private void projectBuiltArtifacts(GmModels models, File outDir) {
 		PublishModelProcessor publisher = new PublishModelProcessor();
 		publisher.setUserNameSupplier(() -> "graphql-schema-converter");
 		publisher.setResourceBuilder(resourceBuilder());
@@ -54,13 +68,33 @@ public class ConvertGraphqlSchemaToModelsProcessor implements ReasonedServicePro
 		Resource zippedModels = publisher.publish(asList(models.apiModel(), models.dataModel()));
 
 		try (InputStream is = zippedModels.openStream()) {
-			ZipTools.unzip(is, new File(request.getOutputDir()));
+			ZipTools.unzip(is, outDir);
 
 		} catch (IOException e) {
 			println(ConsoleOutputs.red("Error while writing models: " + e.getMessage()));
 		}
+	}
 
-		return Maybe.complete(Neutral.NEUTRAL);
+	private void projectSources(GmModels models, File outDir) {
+		writeSources(models.apiModel(), outDir);
+		writeSources(models.dataModel(), outDir);
+	}
+
+	private void writeSources(GmMetaModel gmModel, File outDir) {
+		String modelName = getModelArtifactId(gmModel);
+
+		File srcDir = outDir.toPath().resolve(modelName).resolve("src").toFile();
+
+		GmSourceWriter sourceWriter = new GmSourceWriter();
+		sourceWriter.setOutputDirectory(srcDir);
+		sourceWriter.setGmMetaModel(gmModel);
+		sourceWriter.enableWritingSourcesForExistingClasses();
+
+		sourceWriter.writeMetaModelToDirectory();
+	}
+
+	private String getModelArtifactId(GmMetaModel gmModel) {
+		return StringTools.getSubstringAfterLast(gmModel.getName(), ":");
 	}
 
 	private static ResourceBuilder resourceBuilder() {

@@ -12,8 +12,10 @@ import com.braintribe.model.generic.reflection.EntityTypes;
 import com.braintribe.model.service.api.ServiceRequest;
 import com.braintribe.model.service.api.result.Neutral;
 
+// NOTW: we use Graphql (not GraphQl) here so the command is called convert-graphql-schema-to-models.
+
 @Description("Creates data and api models from a graphql schema file.")
-public interface ConvertGraphqlSchemaToModels extends ServiceRequest {
+public interface ConvertGraphqlSchemaToModels extends GraphQlSchemaRequest {
 
 	EntityType<ConvertGraphqlSchemaToModels> T = EntityTypes.T(ConvertGraphqlSchemaToModels.class);
 
@@ -48,6 +50,10 @@ public interface ConvertGraphqlSchemaToModels extends ServiceRequest {
 	@Initializer("'1.0'")
 	String getVersion();
 	void setVersion(String version);
+
+	@Description("If true, built artifacts with all relevant parts (classes, sources, javadoc) will be created. Otherwise only sources are created.")
+	boolean getAsBuiltArtifacts();
+	void setAsBuiltArtifacts(boolean asArtifacts);
 
 	@Override
 	EvalContext<Neutral> eval(Evaluator<ServiceRequest> evaluator);
