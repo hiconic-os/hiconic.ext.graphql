@@ -18,7 +18,7 @@ limitations under the License.
         <version>[4.0,4.1)</version>
     </parent>
     <artifactId>graphql-processing</artifactId>
-    <version>4.0.8</version>
+    <version>4.0.9</version>
     <properties/>
     <licenses>
         <license>
