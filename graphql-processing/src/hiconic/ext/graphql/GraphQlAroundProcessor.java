@@ -17,6 +17,7 @@ import static hiconic.ext.graphql.api.model.GraphQlQueryRequest.SELECTION_PROPER
 
 import java.util.function.BiFunction;
 
+import com.braintribe.codec.marshaller.api.JsonDecoderVersion;
 import com.braintribe.codec.marshaller.api.PropertyTypeInferenceOverride;
 import com.braintribe.gm.model.reason.Maybe;
 import com.braintribe.gm.model.reason.Reasons;
@@ -68,6 +69,7 @@ public class GraphQlAroundProcessor implements ReasonedServiceAroundProcessor<Gr
 
 		ServiceRequestContext enrichedContext = context.derive() //
 				.set(PropertyTypeInferenceOverride.class, inference) //
+				.set(JsonDecoderVersion.class, 2) //
 				// todo: add id-translation. PropertyDeserializationTranslation
 				.build();
 
