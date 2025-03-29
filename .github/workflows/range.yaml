@@ -9,6 +9,9 @@ on:
       publish:
         type: boolean
         default: true
+      run-integration-tests:
+        type: boolean
+        default: true
 
 jobs:
   run:
@@ -17,3 +20,4 @@ jobs:
     with:
       range: "${{ inputs.range }}"
       publish: ${{ inputs.publish }}
+      run-integration-tests: ${{ inputs.run-integration-tests }}
